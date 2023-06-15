@@ -1,0 +1,9 @@
+{
+  "name": "my-mqtt-client",
+  "version": "1.0.0",
+  "description": "A simple Node.js MQTT client",
+  "main": "index.js",
+  "dependencies": {
+    "mqtt": "^4.3.7"
+  }
+}
