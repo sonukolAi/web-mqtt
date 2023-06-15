@@ -34,7 +34,7 @@ publishMessage('mytopic', 'Hello, HiveMQ!');
 // Schedule message publication every 5 seconds
 setInterval(() => {
   publishMessage('mytopic', 'Another message');
-}, 5000);
+}, 10000);
 
 // Unsubscribe and disconnect gracefully when you're done
 function cleanUp() {
