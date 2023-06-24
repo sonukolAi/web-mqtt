@@ -4,6 +4,9 @@
   "description": "A simple Node.js MQTT client",
   "main": "index.js",
   "dependencies": {
-    "mqtt": "^4.3.7"
+    "mqtt": "^4.3.9",
+    "axios": "^0.24.0",
+    "cheerio": "^1.0.0-rc.3",
+    "express": "^4.17.2"
   }
 }
