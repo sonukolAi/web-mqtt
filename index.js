@@ -47,7 +47,6 @@ setInterval(() => {
   publishMessage('mytopic', '!hi i am server');
 }, 10000);
 
-// Unsubscribe and disconnect gracefully when you're done
 function cleanUp() {
   client.unsubscribe('mytopic', (error) => {
     if (error) {
