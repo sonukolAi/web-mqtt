@@ -54,7 +54,7 @@ app.get('/:num', async (req, res) => {
   }
 });
 
-const server = app.listen(port, () => {
+app.listen(port, () => {
   console.log(`Server started on port ${port}`);
 });
 
@@ -65,7 +65,11 @@ const client = mqtt.connect(brokerUrl);
 
 client.on('connect', () => {
   console.log('Connected to MQTT broker');
-  client.subscribe(topic);
+  client.subscribe(topic, (err) => {
+    if (err) {
+      console.error('Error while subscribing to topic:', err);
+    }
+  });
 });
 
 client.on('message', (receivedTopic, message) => {
@@ -77,8 +81,13 @@ client.on('error', (error) => {
 });
 
 function publishMessage(topic, message) {
-  client.publish(topic, message);
-  console.log(`Published message on topic ${topic}: ${message}`);
+  client.publish(topic, message, (err) => {
+    if (err) {
+      console.error('Error while publishing message:', err);
+    } else {
+      console.log(`Published message on topic ${topic}: ${message}`);
+    }
+  });
 }
 
 publishMessage(topic, '!Hello, HiveMQ!');
@@ -88,10 +97,11 @@ setInterval(() => {
 }, 5000);
 
 function cleanUp() {
-  client.unsubscribe(topic);
+  client.unsubscribe(topic, (err) => {
+    if (err) {
+      console.error('Error while unsubscribing from topic:', err);
+    }
+  });
   client.end();
-  server.close();
-  console.log('Unsubscribed, disconnected, and server closed');
+  console.log('Unsubscribed and disconnected');
 }
-
-process.on('SIGINT', cleanUp);
