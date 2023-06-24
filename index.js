@@ -4,7 +4,7 @@ const cheerio = require('cheerio');
 const mqtt = require('mqtt');
 
 const app = express();
-const port = process.env.PORT || 330;
+const port = process.env.PORT || 3300;
 
 const sources = {
   google: {
@@ -54,7 +54,7 @@ app.get('/:num', async (req, res) => {
   }
 });
 
-app.listen(port, () => {
+const server = app.listen(port, () => {
   console.log(`Server started on port ${port}`);
 });
 
@@ -68,8 +68,8 @@ client.on('connect', () => {
   client.subscribe(topic);
 });
 
-client.on('message', (topic, message) => {
-  console.log(`Received message on topic ${topic}: ${message.toString()}`);
+client.on('message', (receivedTopic, message) => {
+  console.log(`Received message on topic ${receivedTopic}: ${message.toString()}`);
 });
 
 client.on('error', (error) => {
@@ -90,5 +90,8 @@ setInterval(() => {
 function cleanUp() {
   client.unsubscribe(topic);
   client.end();
-  console.log('Unsubscribed and disconnected');
+  server.close();
+  console.log('Unsubscribed, disconnected, and server closed');
 }
+
+process.on('SIGINT', cleanUp);
