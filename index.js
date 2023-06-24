@@ -29,11 +29,11 @@ function publishMessage(topic, message) {
 }
 
 // Example usage: publishing a message and subscribing to a topic
-publishMessage('mytopic', 'Hello, HiveMQ!');
+publishMessage('mytopic', '!Hello, HiveMQ!');
 
 // Schedule message publication every 5 seconds
 setInterval(() => {
-  publishMessage('mytopic', 'hi i am server');
+  publishMessage('mytopic', '!hi i am server');
 }, 10000);
 
 // Unsubscribe and disconnect gracefully when you're done
