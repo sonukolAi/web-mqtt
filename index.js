@@ -1,31 +1,67 @@
+const fetch = require('node-fetch');
 const mqtt = require('mqtt');
 
-// MQTT broker details
-const brokerUrl = 'mqtt://broker.hivemq.com';
-const topic = 'mytopic';
+// MQTT settings
+const BROKER = "mqtt://broker.hivemq.com";
+const TOPIC_NUM = "train-num";
+const SEND_DATA_TOPIC = "trainn";
 
-// Create a client instance
-const client = mqtt.connect(brokerUrl);
+const CLIENT_ID = "esp8266_" + Math.floor(Math.random() * 100000);
 
-// Handle successful connection
-client.on('connect', () => {
-  console.log('Connected to MQTT broker');
+const mqttClient = mqtt.connect(BROKER);
+let trainNum = "11706/1";  // Default train number
+
+function onMessage(topic, message) {
+  if (topic === TOPIC_NUM) {
+    trainNum = message.toString();
+  }
+}
+
+function connectWifi() {
+  console.log("Connecting to Wi-Fi...");
+  // Implement your Wi-Fi connection logic here
+  // This can vary depending on the Node.js environment you are using
+}
+
+function checkWifiConnection() {
+  try {
+    // Implement MQTT check_msg() method here if necessary
+    fetch(`https://nodejs--sonukol.repl.co/${trainNum}`)
+      .then(response => {
+        if (response.status === 200) {
+          return response.text();
+        } else {
+          throw new Error('HTTP request failed');
+        }
+      })
+      .then(data => {
+        mqttClient.publish(SEND_DATA_TOPIC, data);
+        console.log(data);
+      })
+      .catch(error => {
+        console.error("An error occurred:", error);
+        // Handle error by resetting the device or taking appropriate action
+      });
+  } catch (error) {
+    console.error("An error occurred:", error);
+    // Handle error by resetting the device or taking appropriate action
+  }
+}
+
+mqttClient.on('connect', () => {
+  console.log("MQTT connected");
+  mqttClient.subscribe(TOPIC_NUM);
 });
 
-// Handle connection errors
-client.on('error', (error) => {
-  console.error('Error:', error);
-  client.end();
-});
+mqttClient.on('message', onMessage);
 
-// Publish a message every 10 seconds
+connectWifi();
+
 setInterval(() => {
-  const message = '!Hello, HiveMQ!';
-  client.publish(topic, message, (error) => {
-    if (error) {
-      console.error('Failed to publish message:', error);
-    } else {
-      console.log('Message published:', message);
-    }
-  });
-}, 10000);
+  try {
+    checkWifiConnection();
+  } catch (error) {
+    console.error("An error occurred:", error);
+    // Handle error by resetting the device or taking appropriate action
+  }
+}, 3000);
