@@ -1,4 +1,5 @@
 const mqtt = require('mqtt');
+const axios = require('axios');
 
 // MQTT broker URL
 const brokerUrl = 'mqtt://broker.hivemq.com';
@@ -43,5 +44,35 @@ function cleanUp() {
   console.log('Unsubscribed and disconnected');
 }
 
-// Uncomment the line below if you want to automatically disconnect after 20 seconds
-// setTimeout(cleanUp, 20000);
+// Handle incoming MQTT messages
+client.on('message', (topic, message) => {
+  console.log(`Received message on topic ${topic}: ${message.toString()}`);
+});
+
+// Send MQTT message after handling a request
+function handleMessage(trainNum) {
+  const SEND_DATA_TOPIC = 'data_topic';
+
+  axios.get(`https://nodejs--sonukol.repl.co/${trainNum}`)
+    .then((response) => {
+      client.publish(SEND_DATA_TOPIC, response.data);
+      console.log(response.data);
+    })
+    .catch((error) => {
+      console.error('An error occurred:', error);
+      process.exit(1); // Handle error by terminating the program
+    });
+}
+
+(async function () {
+  try {
+    // Connect to WiFi
+    await connectWifi();
+
+    // Check WiFi connection every 2 seconds
+    setInterval(checkWifiConnection, 2000);
+  } catch (error) {
+    console.log('An error occurred:', error);
+    process.exit(1); // Handle error by terminating the program
+  }
+})();
