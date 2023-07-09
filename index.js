@@ -4,8 +4,8 @@ const { v4: uuidv4 } = require('uuid');
 
 // MQTT settings
 const BROKER = 'broker.hivemq.com';
-const TOPIC_NUM = 'train-num';
-const SEND_DATA_TOPIC = 'train';
+const TOPIC_NUM = 'train-num-render';
+const SEND_DATA_TOPIC = 'train-render';
 
 const CLIENT_ID = 'esp8266_' + uuidv4();
 
@@ -43,4 +43,4 @@ function fetchDataAndPublish() {
 setInterval(() => {
   mqttClient.emit('check');
   fetchDataAndPublish();
-}, 1000);
+}, 3000);
