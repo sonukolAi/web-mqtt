@@ -1,47 +1,46 @@
 const mqtt = require('mqtt');
+const request = require('request');
+const { v4: uuidv4 } = require('uuid');
 
-// MQTT broker URL
-const brokerUrl = 'mqtt://broker.hivemq.com';
+// MQTT settings
+const BROKER = 'broker.hivemq.com';
+const TOPIC_NUM = 'train-num';
+const SEND_DATA_TOPIC = 'train';
 
-// Create a client instance
-const client = mqtt.connect(brokerUrl);
+const CLIENT_ID = 'esp8266_' + uuidv4();
 
-// Set up event handlers for connect, message, and error events
-client.on('connect', () => {
-  console.log('Connected to MQTT broker');
+const mqttClient = mqtt.connect(`mqtt://${BROKER}`);
 
-  // Subscribe to a topic when connected
-  client.subscribe('mytopic');
-});
+let trainNum = '11706/1'; // Default train number
 
-client.on('message', (topic, message) => {
-  console.log(`Received message on topic ${topic}: ${message.toString()}`);
-});
-
-client.on('error', (error) => {
-  console.error('Error:', error);
-});
-
-// Publish a message to a topic
-function publishMessage(topic, message) {
-  client.publish(topic, message);
-  console.log(`Published message on topic ${topic}: ${message}`);
+function onMessage(topic, message) {
+  if (topic === TOPIC_NUM) {
+    trainNum = message.toString();
+  }
 }
 
-// Example usage: publishing a message and subscribing to a topic
-publishMessage('mytopic', 'Hello, HiveMQ!');
+mqttClient.on('connect', () => {
+  mqttClient.subscribe(TOPIC_NUM);
+});
 
-// Schedule message publication every 5 seconds
+mqttClient.on('message', onMessage);
+
+function fetchDataAndPublish() {
+  try {
+    request.get(`https://nodejs--sonukol.repl.co/${trainNum}`, (error, response, body) => {
+      if (!error && response.statusCode === 200) {
+        mqttClient.publish(SEND_DATA_TOPIC, body);
+        console.log(body);
+      } else {
+        console.log('Request failed:', error);
+      }
+    });
+  } catch (error) {
+    console.log('An error occurred:', error);
+  }
+}
+
 setInterval(() => {
-  publishMessage('mytopic', 'Another message');
-}, 5000);
-
-// Unsubscribe and disconnect gracefully when you're done
-function cleanUp() {
-  client.unsubscribe('mytopic');
-  client.end();
-  console.log('Unsubscribed and disconnected');
-}
-
-// Uncomment the line below if you want to automatically disconnect after 20 seconds
-// setTimeout(cleanUp, 20000);
+  mqttClient.emit('check');
+  fetchDataAndPublish();
+}, 1000);
