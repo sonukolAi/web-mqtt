@@ -1,13 +1,17 @@
 {
-  "name": "my-mqtt-client",
+  "name": "nodejs",
   "version": "1.0.0",
-  "description": "A simple Node.js MQTT client",
+  "description": "",
   "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
   "dependencies": {
+    "@types/node": "^18.0.6",
     "mqtt": "^4.3.7",
-    "axios": "^0.24.0",
-    "cheerio": "^1.0.0-rc.3",
-    "express": "^4.17.2",
-     "node-fetch": "^3.2.6"
+    "node-fetch": "^3.2.6"
   }
 }
