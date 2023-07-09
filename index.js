@@ -1,67 +1,47 @@
-const fetch = require('node-fetch');
 const mqtt = require('mqtt');
 
-// MQTT settings
-const BROKER = "mqtt://broker.hivemq.com";
-const TOPIC_NUM = "train-num";
-const SEND_DATA_TOPIC = "trainn";
+// MQTT broker URL
+const brokerUrl = 'mqtt://broker.hivemq.com';
 
-const CLIENT_ID = "esp8266_" + Math.floor(Math.random() * 100000);
+// Create a client instance
+const client = mqtt.connect(brokerUrl);
 
-const mqttClient = mqtt.connect(BROKER);
-let trainNum = "11706/1";  // Default train number
+// Set up event handlers for connect, message, and error events
+client.on('connect', () => {
+  console.log('Connected to MQTT broker');
 
-function onMessage(topic, message) {
-  if (topic === TOPIC_NUM) {
-    trainNum = message.toString();
-  }
-}
-
-function connectWifi() {
-  console.log("Connecting to Wi-Fi...");
-  // Implement your Wi-Fi connection logic here
-  // This can vary depending on the Node.js environment you are using
-}
-
-function checkWifiConnection() {
-  try {
-    // Implement MQTT check_msg() method here if necessary
-    fetch(`https://nodejs--sonukol.repl.co/${trainNum}`)
-      .then(response => {
-        if (response.status === 200) {
-          return response.text();
-        } else {
-          throw new Error('HTTP request failed');
-        }
-      })
-      .then(data => {
-        mqttClient.publish(SEND_DATA_TOPIC, data);
-        console.log(data);
-      })
-      .catch(error => {
-        console.error("An error occurred:", error);
-        // Handle error by resetting the device or taking appropriate action
-      });
-  } catch (error) {
-    console.error("An error occurred:", error);
-    // Handle error by resetting the device or taking appropriate action
-  }
-}
-
-mqttClient.on('connect', () => {
-  console.log("MQTT connected");
-  mqttClient.subscribe(TOPIC_NUM);
+  // Subscribe to a topic when connected
+  client.subscribe('mytopic');
 });
 
-mqttClient.on('message', onMessage);
+client.on('message', (topic, message) => {
+  console.log(`Received message on topic ${topic}: ${message.toString()}`);
+});
 
-connectWifi();
+client.on('error', (error) => {
+  console.error('Error:', error);
+});
 
+// Publish a message to a topic
+function publishMessage(topic, message) {
+  client.publish(topic, message);
+  console.log(`Published message on topic ${topic}: ${message}`);
+}
+
+// Example usage: publishing a message and subscribing to a topic
+publishMessage('mytopic', 'Hello, HiveMQ!');
+
+// Schedule message publication every 5 seconds
 setInterval(() => {
-  try {
-    checkWifiConnection();
-  } catch (error) {
-    console.error("An error occurred:", error);
-    // Handle error by resetting the device or taking appropriate action
-  }
-}, 3000);
+  publishMessage('mytopic', 'Another message');
+}, 5000);
+
+// Unsubscribe and disconnect gracefully when you're done
+function cleanUp() {
+  client.unsubscribe('mytopic');
+  client.end();
+  console.log('Unsubscribed and disconnected');
+}
+
+// Uncomment the line below if you want to automatically disconnect after 20 seconds
+// setTimeout(cleanUp, 20000);
