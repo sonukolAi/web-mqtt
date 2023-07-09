@@ -9,30 +9,66 @@ const SEND_DATA_TOPIC = 'train-render';
 
 const CLIENT_ID = 'esp8266_' + uuidv4();
 
-const mqttClient = mqtt.connect(`mqtt://${BROKER}`, {
-  clientId: CLIENT_ID,
-});
-
 let trainNum = '15017/2'; // Default train number
 
-mqttClient.on('connect', () => {
-  mqttClient.subscribe(TOPIC_NUM, (err) => {
-    if (err) {
-      console.log('Subscription error:', err);
-    } else {
-      console.log('Subscribed to', TOPIC_NUM);
+function connectToMQTT() {
+  const mqttClient = mqtt.connect(`mqtt://${BROKER}`, {
+    clientId: CLIENT_ID,
+  });
+
+  mqttClient.on('connect', () => {
+    mqttClient.subscribe(TOPIC_NUM, (err) => {
+      if (err) {
+        console.log('Subscription error:', err);
+      } else {
+        console.log('Subscribed to', TOPIC_NUM);
+      }
+    });
+  });
+
+  mqttClient.on('message', (topic, message) => {
+    if (topic === TOPIC_NUM) {
+      trainNum = message.toString();
+      console.log('Train number updated:', trainNum);
     }
   });
-});
 
-mqttClient.on('message', (topic, message) => {
-  if (topic === TOPIC_NUM) {
-    trainNum = message.toString();
-    console.log('Train number updated:', trainNum);
-  }
-});
+  mqttClient.on('error', (error) => {
+    console.log('MQTT error:', error);
+    mqttClient.end();
+    reconnectToMQTT();
+  });
 
-function fetchDataAndPublish() {
+  mqttClient.on('close', () => {
+    console.log('MQTT connection closed.');
+    mqttClient.end();
+    reconnectToMQTT();
+  });
+
+  mqttClient.on('offline', () => {
+    console.log('MQTT client is offline.');
+    mqttClient.end();
+    reconnectToMQTT();
+  });
+
+  mqttClient.on('reconnect', () => {
+    console.log('Reconnecting to MQTT broker...');
+  });
+
+  setInterval(() => {
+    if (mqttClient.connected) {
+      fetchDataAndPublish(mqttClient);
+    } else {
+      console.log('MQTT client is not connected.');
+      mqttClient.end();
+      reconnectToMQTT();
+    }
+  }, 9000);
+
+  return mqttClient;
+}
+
+function fetchDataAndPublish(mqttClient) {
   try {
     request.get(`https://nodejs--sonukol.repl.co/${trainNum}`, (error, response, body) => {
       if (!error && response.statusCode === 200) {
@@ -45,48 +81,20 @@ function fetchDataAndPublish() {
         });
       } else {
         console.log('Request failed:', error);
-        resetMachine(); // Reset the machine on request failure
       }
     });
   } catch (error) {
     console.log('An error occurred:', error);
-    resetMachine(); // Reset the machine on error
   }
 }
 
-function resetMachine() {
-  // Perform necessary actions to restart the machine
-  console.log('Restarting the machine...');
-  process.exit(1); // Restart the process
+function reconnectToMQTT() {
+  setTimeout(() => {
+    console.log('Reconnecting to MQTT broker...');
+    connectToMQTT();
+  }, 5000); // Wait for 5 seconds before reconnecting
 }
 
-mqttClient.on('error', (error) => {
-  console.log('MQTT error:', error);
-  resetMachine(); // Reset the machine on MQTT error
-});
-
-mqttClient.on('reconnect', () => {
-  console.log('Reconnecting to MQTT broker...');
-});
-
-mqttClient.on('close', () => {
-  console.log('MQTT connection closed.');
-  resetMachine(); // Reset the machine when MQTT connection is closed
-});
-
-mqttClient.on('offline', () => {
-  console.log('MQTT client is offline.');
-  resetMachine(); // Reset the machine when MQTT client is offline
-});
-
-setInterval(() => {
-  if (mqttClient.connected) {
-    fetchDataAndPublish();
-  } else {
-    console.log('MQTT client is not connected.');
-    resetMachine(); // Reset the machine when MQTT client is not connected
-  }
-}, 9000);
-
-// Clear console output
+// Start the initial MQTT connection
 console.clear();
+connectToMQTT();
