@@ -43,4 +43,4 @@ function fetchDataAndPublish() {
 setInterval(() => {
   mqttClient.emit('check');
   fetchDataAndPublish();
-}, 3000);
+}, 5000);
